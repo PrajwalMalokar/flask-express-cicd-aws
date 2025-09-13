@@ -1,0 +1,32 @@
+pipeline {
+    agent any
+
+    environment {
+        LIVE_DIR = "/home/ubuntu/flask-express-cicd-aws/frontend"
+        WORKSPACE_DIR = "${env.WORKSPACE}/frontend"
+    }
+
+    stages {
+        stage('Deploy Express App') {
+            steps {
+                
+                sh "pm2 stop express-app || true"
+                sh "rsync -av --delete ${WORKSPACE_DIR}/ ${LIVE_DIR}/"
+                sh '''
+                    cd ${LIVE_DIR}
+                    npm install
+                    pm2 restart express-app || pm2 start app.js --name express-app --update-env
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Express deployment completed successfully!'
+        }
+        failure {
+            echo 'Express deployment failed.'
+        }
+    }
+}

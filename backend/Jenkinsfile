@@ -1,0 +1,32 @@
+pipeline {
+    agent any
+
+    environment {
+        LIVE_DIR = "/home/ubuntu/flask-express-cicd-aws/backend"
+        WORKSPACE_DIR = "${env.WORKSPACE}/backend"
+    }
+
+    stages {
+        stage('Deploy Flask App') {
+            steps {
+                sh "pm2 stop flask-app || true"
+                sh "rsync -av --delete ${WORKSPACE_DIR}/ ${LIVE_DIR}/"
+                sh '''
+                    cd ${LIVE_DIR}
+                    source venv/bin/activate
+                    pip install -r requirements.txt
+                    pm2 start app.py --interpreter=python3 --name flask-app --update-env
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Flask deployment completed successfully!'
+        }
+        failure {
+            echo 'Flask deployment failed.'
+        }
+    }
+}
